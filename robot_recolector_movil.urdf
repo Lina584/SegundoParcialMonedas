@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<robot name="robot_recolector_movil">
+
+  <material name="chasis_color"><color rgba="0.15 0.55 0.2 1"/></material>
+  <material name="rueda_color"><color rgba="0.05 0.05 0.05 1"/></material>
+  <material name="vaso_color"><color rgba="0.9 0.9 0.1 1"/></material>
+
+  <!-- Chasis: base libre (no fija), esto es lo que se mueve en la simulación -->
+  <link name="chasis">
+    <visual>
+      <geometry><box size="0.30 0.22 0.10"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="chasis_color"/>
+    </visual>
+    <visual>
+      <geometry><cylinder radius="0.06" length="0.12"/></geometry>
+      <origin xyz="0 0 0.11" rpy="0 0 0"/>
+      <material name="vaso_color"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.30 0.22 0.10"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="1.2"/>
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+    </inertial>
+  </link>
+
+  <!-- Rueda izquierda: joint continuo, sí puede girar -->
+  <link name="rueda_izq">
+    <visual>
+      <geometry><cylinder radius="0.05" length="0.03"/></geometry>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <material name="rueda_color"/>
+    </visual>
+    <collision>
+      <geometry><cylinder radius="0.05" length="0.03"/></geometry>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.15"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+  <joint name="joint_rueda_izq" type="continuous">
+    <parent link="chasis"/>
+    <child link="rueda_izq"/>
+    <origin xyz="0 0.13 -0.03" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <!-- Rueda derecha: joint continuo, sí puede girar -->
+  <link name="rueda_der">
+    <visual>
+      <geometry><cylinder radius="0.05" length="0.03"/></geometry>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <material name="rueda_color"/>
+    </visual>
+    <collision>
+      <geometry><cylinder radius="0.05" length="0.03"/></geometry>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.15"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+  <joint name="joint_rueda_der" type="continuous">
+    <parent link="chasis"/>
+    <child link="rueda_der"/>
+    <origin xyz="0 -0.13 -0.03" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <!-- Rueda loca (caster) para estabilidad, sin motor -->
+  <link name="rueda_loca">
+    <visual>
+      <geometry><sphere radius="0.03"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="rueda_color"/>
+    </visual>
+    <collision>
+      <geometry><sphere radius="0.03"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.05"/>
+      <inertia ixx="0.0005" ixy="0.0" ixz="0.0" iyy="0.0005" iyz="0.0" izz="0.0005"/>
+    </inertial>
+  </link>
+  <joint name="joint_rueda_loca" type="fixed">
+    <parent link="chasis"/>
+    <child link="rueda_loca"/>
+    <origin xyz="0.12 0 -0.06" rpy="0 0 0"/>
+  </joint>
+
+</robot>
+
