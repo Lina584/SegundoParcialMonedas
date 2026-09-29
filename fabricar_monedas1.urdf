@@ -1,0 +1,204 @@
+<?xml version="1.0"?>
+<robot name="fabrica_estable_v3">
+
+  <!-- ============ MATERIALES ============ -->
+  <material name="blue_metal"><color rgba="0.05 0.15 0.35 1.0"/></material>
+  <material name="black_rubber"><color rgba="0.05 0.05 0.05 1.0"/></material>
+  <material name="white_machine"><color rgba="0.95 0.95 0.98 1.0"/></material>
+  <material name="base_material"><color rgba="0.3 0.3 0.3 1"/></material>
+  <material name="brazo1_material"><color rgba="0.2 0.6 0.8 1"/></material>
+  <material name="brazo2_material"><color rgba="0.9 0.5 0.1 1"/></material>
+  <material name="pinza_material"><color rgba="0.8 0.2 0.2 1"/></material>
+  <material name="dedo_material"><color rgba="0.9 0.9 0.9 1"/></material>
+  <material name="carro_material"><color rgba="0.1 0.3 0.6 1"/></material>
+
+  <!-- ========================================== -->
+  <!-- CINTA TRANSPORTADORA: ahora recta y más corta -->
+  <!-- (antes era una L de 3 tramos; se simplificó a un solo tramo recto) -->
+  <!-- ========================================== -->
+  <link name="cinta_seg1">
+    <visual><geometry><box size="2.2 0.4 0.1"/></geometry><origin xyz="0 0 0" rpy="0 0 0"/><material name="blue_metal"/></visual>
+    <visual><geometry><box size="2.1 0.3 0.05"/></geometry><origin xyz="0 0 0.08" rpy="0 0 0"/><material name="black_rubber"/></visual>
+    <visual><geometry><cylinder radius="0.04" length="0.4"/></geometry><origin xyz="1.0 0.15 -0.25" rpy="0 0 0"/><material name="black_rubber"/></visual>
+    <visual><geometry><cylinder radius="0.04" length="0.4"/></geometry><origin xyz="1.0 -0.15 -0.25" rpy="0 0 0"/><material name="black_rubber"/></visual>
+    <visual><geometry><cylinder radius="0.04" length="0.4"/></geometry><origin xyz="-1.0 0.15 -0.25" rpy="0 0 0"/><material name="black_rubber"/></visual>
+    <visual><geometry><cylinder radius="0.04" length="0.4"/></geometry><origin xyz="-1.0 -0.15 -0.25" rpy="0 0 0"/><material name="black_rubber"/></visual>
+    <inertial><mass value="20.0"/><inertia ixx="10.0" ixy="0.0" ixz="0.0" iyy="10.0" iyz="0.0" izz="1.5"/></inertial>
+  </link>
+
+  <!-- ========================================== -->
+  <!-- CONSTRUCCIÓN DE LA FÁBRICA                  -->
+  <!-- ========================================== -->
+
+  <link name="base_planta">
+    <inertial><mass value="1000.0"/><inertia ixx="100.0" ixy="0.0" ixz="0.0" iyy="100.0" iyz="0.0" izz="100.0"/></inertial>
+  </link>
+
+  <!-- MÁQUINA DE CLASIFICACIÓN -->
+  <link name="maquina_embalaje_base">
+    <visual><geometry><box size="2.0 1.2 0.1"/></geometry><origin xyz="0 0 0" rpy="0 0 0"/><material name="blue_metal"/></visual>
+    <inertial><mass value="50.0"/><inertia ixx="10.0" ixy="0.0" ixz="0.0" iyy="10.0" iyz="0.0" izz="10.0"/></inertial>
+  </link>
+  <joint name="j_maquina_base" type="fixed">
+    <parent link="base_planta"/><child link="maquina_embalaje_base"/><origin xyz="-3.0 0.0 0.1" rpy="0 0 0"/>
+  </joint>
+
+  <link name="maquina_embalaje_cuerpo">
+    <visual><geometry><box size="1.8 1.2 1.5"/></geometry><origin xyz="0 0 0.75" rpy="0 0 0"/><material name="white_machine"/></visual>
+    <visual><geometry><cylinder radius="0.05" length="0.05"/></geometry><origin xyz="-0.6 0.0 1.52" rpy="0 0 0"/><material name="black_rubber"/></visual>
+    <visual><geometry><cylinder radius="0.06" length="0.05"/></geometry><origin xyz="-0.3 0.0 1.52" rpy="0 0 0"/><material name="black_rubber"/></visual>
+    <visual><geometry><cylinder radius="0.07" length="0.05"/></geometry><origin xyz="0.0 0.0 1.52" rpy="0 0 0"/><material name="black_rubber"/></visual>
+    <visual><geometry><cylinder radius="0.08" length="0.05"/></geometry><origin xyz="0.3 0.0 1.52" rpy="0 0 0"/><material name="black_rubber"/></visual>
+    <visual><geometry><cylinder radius="0.09" length="0.05"/></geometry><origin xyz="0.6 0.0 1.52" rpy="0 0 0"/><material name="black_rubber"/></visual>
+    <visual><geometry><cylinder radius="0.2" length="0.2"/></geometry><origin xyz="0.9 0.0 0.2" rpy="0 0 0"/><material name="black_rubber"/></visual>
+    <inertial><mass value="80.0"/><inertia ixx="20.0" ixy="0.0" ixz="0.0" iyy="20.0" iyz="0.0" izz="20.0"/></inertial>
+  </link>
+  <joint name="j_maquina_cuerpo" type="fixed">
+    <parent link="maquina_embalaje_base"/><child link="maquina_embalaje_cuerpo"/><origin xyz="0 0 0.0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Cinta recta: punto de anclaje + el cuerpo visual real -->
+  <link name="cinta_seg1_link"/>
+  <joint name="j_cinta_seg1" type="fixed">
+    <parent link="base_planta"/><child link="cinta_seg1_link"/><origin xyz="0.0 0.0 0.5" rpy="0 0 0"/>
+  </joint>
+  <joint name="j_cinta_seg1_visual" type="fixed">
+    <parent link="cinta_seg1_link"/><child link="cinta_seg1"/><origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 5. VASOS DECORATIVOS SOBRE LA CINTA (reubicados para la banda corta) -->
+  <link name="vaso1">
+    <visual><geometry><cylinder radius="0.08" length="0.55"/></geometry><origin xyz="-0.7 0 0.25" rpy="0 0 0"/><material name="blue_metal"/></visual>
+    <visual><geometry><cylinder radius="0.09" length="0.2"/></geometry><origin xyz="-0.7 0 0.15" rpy="0 0 0"/><material name="white_machine"/></visual>
+  </link>
+  <link name="vaso2">
+    <visual><geometry><cylinder radius="0.07" length="0.55"/></geometry><origin xyz="0 0 0.25" rpy="0 0 0"/><material name="black_rubber"/></visual>
+    <visual><geometry><cylinder radius="0.09" length="0.2"/></geometry><origin xyz="0 0 0.15" rpy="0 0 0"/><material name="white_machine"/></visual>
+  </link>
+  <link name="vaso3">
+    <visual><geometry><cylinder radius="0.07" length="0.55"/></geometry><origin xyz="0.7 0 0.25" rpy="0 0 0"/><material name="blue_metal"/></visual>
+    <visual><geometry><cylinder radius="0.09" length="0.2"/></geometry><origin xyz="0.7 0 0.15" rpy="0 0 0"/><material name="white_machine"/></visual>
+  </link>
+  <!-- Antes no tenían joint -> pybullet los rechazaba por quedar desconectados del árbol.
+       Se cuelgan del mismo punto de anclaje de la cinta 1; sus offsets internos (0, 1, 2 en X)
+       ya los reparten a lo largo de la banda, así que basta con un pequeño desnivel en Z
+       para que queden apoyados sobre la superficie de la cinta. -->
+  <joint name="j_vaso1" type="fixed">
+    <parent link="cinta_seg1_link"/><child link="vaso1"/><origin xyz="0 0 0.1" rpy="0 0 0"/>
+  </joint>
+  <joint name="j_vaso2" type="fixed">
+    <parent link="cinta_seg1_link"/><child link="vaso2"/><origin xyz="0 0 0.1" rpy="0 0 0"/>
+  </joint>
+  <joint name="j_vaso3" type="fixed">
+    <parent link="cinta_seg1_link"/><child link="vaso3"/><origin xyz="0 0 0.1" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ========================================== -->
+  <!-- BRAZO ROBÓTICO 1 (CON PINZA)                -->
+  <!-- ========================================== -->
+  <link name="brazo1_base_link">
+    <visual><geometry><cylinder length="0.15" radius="0.25"/></geometry><origin xyz="-2 0 0.075"/><material name="base_material"/></visual>
+    <inertial><mass value="5.0"/><inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/></inertial>
+  </link>
+  <joint name="joint_brazo1_a_planta" type="fixed">
+    <parent link="base_planta"/><child link="brazo1_base_link"/><origin xyz="1.5 -0.5 0.0" rpy="0 0 0"/>
+  </joint>
+  <joint name="joint_1" type="fixed">
+    <parent link="brazo1_base_link"/><child link="brazo1_link"/><origin xyz="0 0 0.15" rpy="0 0 0"/>
+  </joint>
+  <link name="brazo1_link">
+    <visual><geometry><cylinder length="0.35" radius="0.06"/></geometry><origin xyz="-2 0 0.175"/><material name="brazo1_material"/></visual>
+    <inertial><mass value="2.0"/><inertia ixx="0.05" ixy="0.0" ixz="0.0" iyy="0.05" iyz="0.0" izz="0.05"/></inertial>
+  </link>
+  <joint name="joint_2" type="fixed">
+    <parent link="brazo1_link"/><child link="brazo2_link"/><origin xyz="-2 0 0.35" rpy="0 0 0"/>
+  </joint>
+  <link name="brazo2_link">
+    <visual><geometry><cylinder length="0.30" radius="0.05"/></geometry><origin xyz="0 0 0.15"/><material name="brazo2_material"/></visual>
+    <inertial><mass value="1.5"/><inertia ixx="0.03" ixy="0.0" ixz="0.0" iyy="0.03" iyz="0.0" izz="0.03"/></inertial>
+  </link>
+  <joint name="joint_gripper" type="fixed">
+    <parent link="brazo2_link"/><child link="gripper_base"/><origin xyz="0 0 0.30" rpy="0 0 0"/>
+  </joint>
+  <link name="gripper_base">
+    <visual><geometry><box size="0.08 0.12 0.04"/></geometry><origin xyz="0 0 0.02"/><material name="pinza_material"/></visual>
+    <inertial><mass value="0.5"/><inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/></inertial>
+  </link>
+  <link name="dedo_izquierdo">
+    <visual><geometry><box size="0.03 0.08 0.12"/></geometry><origin xyz="-0.055 0 0.06"/><material name="dedo_material"/></visual>
+    <inertial><mass value="0.2"/><inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/></inertial>
+  </link>
+  <joint name="joint_dedo_izq" type="fixed">
+    <parent link="gripper_base"/><child link="dedo_izquierdo"/><origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="dedo_derecho">
+    <visual><geometry><box size="0.03 0.08 0.12"/></geometry><origin xyz="0.055 0 0.06"/><material name="dedo_material"/></visual>
+    <inertial><mass value="0.2"/><inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/></inertial>
+  </link>
+  <joint name="joint_dedo_der" type="fixed">
+    <parent link="gripper_base"/><child link="dedo_derecho"/><origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ========================================== -->
+  <!-- BRAZO ROBÓTICO 2 (CON PINZAS COMPLETAS)     -->
+  <!-- ========================================== -->
+  <link name="brazo2_base_link">
+    <visual><geometry><cylinder length="0.15" radius="0.25"/></geometry><origin xyz="-1.97 7.6 0.075"/><material name="base_material"/></visual>
+    <inertial><mass value="5.0"/><inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/></inertial>
+  </link>
+  <joint name="joint_brazo2_a_planta" type="fixed">
+    <parent link="base_planta"/><child link="brazo2_base_link"/><origin xyz="3.8 -7.1 0.0" rpy="0 0 0"/>
+  </joint>
+  <joint name="joint_b2_1" type="fixed">
+    <parent link="brazo2_base_link"/><child link="brazo2_seg1"/><origin xyz="-1.9 7.6 0.2" rpy="0 0 0"/>
+  </joint>
+  <link name="brazo2_seg1">
+    <visual><geometry><cylinder length="0.35" radius="0.06"/></geometry><origin xyz="0 0 0.175"/><material name="brazo1_material"/></visual>
+    <inertial><mass value="2.0"/><inertia ixx="0.05" ixy="0.0" ixz="0.0" iyy="0.05" iyz="0.0" izz="0.05"/></inertial>
+  </link>
+  <joint name="joint_b2_2" type="fixed">
+    <parent link="brazo2_seg1"/><child link="brazo2_seg2"/><origin xyz="0 0 0.35" rpy="0 0 0"/>
+  </joint>
+  <link name="brazo2_seg2">
+    <visual><geometry><cylinder length="0.30" radius="0.05"/></geometry><origin xyz="0 0 0.15"/><material name="brazo2_material"/></visual>
+    <inertial><mass value="1.5"/><inertia ixx="0.03" ixy="0.0" ixz="0.0" iyy="0.03" iyz="0.0" izz="0.03"/></inertial>
+  </link>
+  <joint name="joint_b2_gripper" type="fixed">
+    <parent link="brazo2_seg2"/><child link="brazo2_gripper_base"/><origin xyz="0 0 0.30" rpy="0 0 0"/>
+  </joint>
+  <link name="brazo2_gripper_base">
+    <visual><geometry><box size="0.08 0.12 0.04"/></geometry><origin xyz="0 0 0.02"/><material name="pinza_material"/></visual>
+    <inertial><mass value="0.5"/><inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/></inertial>
+  </link>
+  <link name="brazo2_dedo_izquierdo">
+    <visual><geometry><box size="0.03 0.08 0.12"/></geometry><origin xyz="-0.055 0 0.06"/><material name="dedo_material"/></visual>
+    <inertial><mass value="0.2"/><inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/></inertial>
+  </link>
+  <joint name="joint_b2_dedo_izq" type="fixed">
+    <parent link="brazo2_gripper_base"/><child link="brazo2_dedo_izquierdo"/><origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="brazo2_dedo_derecho">
+    <visual><geometry><box size="0.03 0.08 0.12"/></geometry><origin xyz="0.055 0 0.06"/><material name="dedo_material"/></visual>
+    <inertial><mass value="0.2"/><inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/></inertial>
+  </link>
+  <joint name="joint_b2_dedo_der" type="fixed">
+    <parent link="brazo2_gripper_base"/><child link="brazo2_dedo_derecho"/><origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ========================================== -->
+  <!-- CARRO RECOLECTOR (marca la META del recorrido) -->
+  <!-- ========================================== -->
+  <link name="carro_recolector">
+    <visual><geometry><box size="1.2 0.8 0.15"/></geometry><origin xyz="-2 6 0.075" rpy="0 0 0"/><material name="carro_material"/></visual>
+    <visual><geometry><box size="0.8 0.6 0.3"/></geometry><origin xyz="-2 6 0.30" rpy="0 0 0"/><material name="carro_material"/></visual>
+    <visual><geometry><cylinder radius="0.1" length="0.12"/></geometry><origin xyz="-1.4 5.6 0.1" rpy="0 1.57 0"/><material name="black_rubber"/></visual>
+    <visual><geometry><cylinder radius="0.1" length="0.12"/></geometry><origin xyz="-2.6 5.6 0.1" rpy="0 1.57 0"/><material name="black_rubber"/></visual>
+    <visual><geometry><cylinder radius="0.1" length="0.12"/></geometry><origin xyz="-1.4 6.4 0.1" rpy="0 1.57 0"/><material name="black_rubber"/></visual>
+    <visual><geometry><cylinder radius="0.1" length="0.12"/></geometry><origin xyz="-2.6 6.4 0.1" rpy="0 1.57 0"/><material name="black_rubber"/></visual>
+    <inertial><mass value="20.0"/><inertia ixx="5.0" ixy="0.0" ixz="0.0" iyy="5.0" iyz="0.0" izz="5.0"/></inertial>
+  </link>
+  <joint name="j_carro_recolector" type="fixed">
+    <parent link="base_planta"/><child link="carro_recolector"/><origin xyz="4.5 -7.5 0.0" rpy="0 0 0"/>
+  </joint>
+
+</robot>
