@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<robot name="dron_recolector">
+
+  <material name="cuerpo_dron"><color rgba="0.15 0.55 0.2 1"/></material>
+  <material name="brazo_dron"><color rgba="0.1 0.1 0.1 1"/></material>
+  <material name="helice_dron"><color rgba="0.05 0.05 0.05 1"/></material>
+  <material name="carga_color"><color rgba="0.9 0.9 0.1 1"/></material>
+
+  <!-- Cuerpo único: base libre (no fija), esto es lo que se mueve/vuela
+       en la simulación. Diseño simple: cuerpo central + 4 brazos en X
+       con su hélice en la punta + un marcador amarillo debajo que
+       representa el vaso que va cargando. -->
+  <link name="cuerpo">
+    <visual>
+      <geometry><box size="0.16 0.16 0.06"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="cuerpo_dron"/>
+    </visual>
+
+    <!-- 4 brazos en X -->
+    <visual><geometry><box size="0.22 0.03 0.02"/></geometry><origin xyz="0.09 0.09 0.02" rpy="0 0 0.785"/><material name="brazo_dron"/></visual>
+    <visual><geometry><box size="0.22 0.03 0.02"/></geometry><origin xyz="-0.09 0.09 0.02" rpy="0 0 -0.785"/><material name="brazo_dron"/></visual>
+    <visual><geometry><box size="0.22 0.03 0.02"/></geometry><origin xyz="0.09 -0.09 0.02" rpy="0 0 -0.785"/><material name="brazo_dron"/></visual>
+    <visual><geometry><box size="0.22 0.03 0.02"/></geometry><origin xyz="-0.09 -0.09 0.02" rpy="0 0 0.785"/><material name="brazo_dron"/></visual>
+
+    <!-- 4 hélices (discos) en las puntas de los brazos -->
+    <visual><geometry><cylinder radius="0.07" length="0.01"/></geometry><origin xyz="0.16 0.16 0.035" rpy="0 0 0"/><material name="helice_dron"/></visual>
+    <visual><geometry><cylinder radius="0.07" length="0.01"/></geometry><origin xyz="-0.16 0.16 0.035" rpy="0 0 0"/><material name="helice_dron"/></visual>
+    <visual><geometry><cylinder radius="0.07" length="0.01"/></geometry><origin xyz="0.16 -0.16 0.035" rpy="0 0 0"/><material name="helice_dron"/></visual>
+    <visual><geometry><cylinder radius="0.07" length="0.01"/></geometry><origin xyz="-0.16 -0.16 0.035" rpy="0 0 0"/><material name="helice_dron"/></visual>
+
+    <collision>
+      <geometry><box size="0.35 0.35 0.06"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.8"/>
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+    </inertial>
+  </link>
+
+</robot>
