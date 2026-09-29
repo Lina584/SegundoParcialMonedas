@@ -1,17 +1,19 @@
 """
 Simulación PyBullet - Sistema logístico de monedas inteligentes
 ==================================================================
-Flujo completo:
-1. Las monedas cruzan la banda recta una por una (despacio).
-2. Al final de la banda hay un SEPARADOR: cada moneda se clasifica
-   por denominación (500 / 200 / 100) y se desvía hacia su propio
-   canal de recolección, cada uno con su color.
-3. Cuando ya se clasificaron todas, UN SOLO carrito recorre las 3
-   denominaciones una por una: va al canal, "recoge" esas monedas
-   (desaparecen del canal, como si las cargara), las lleva por el
-   corredor con los 3 obstáculos hasta SU meta, y regresa por la
-   siguiente denominación. Así hasta completar las 3.
-4. El dashboard va mostrando conteo, peso y valor por denominación.
+Flujo completo (tramo 1 + separador + tramo 2 + recolección):
+1. TRAMO 1: las monedas cruzan la banda recta una por una (despacio).
+2. SEPARADOR MECÁNICO: al final del tramo 1, cada moneda se clasifica
+   por denominación (500 / 200 / 100), pasa físicamente por el canal
+   inclinado que le corresponde y cae dentro de SU vaso.
+3. Cuando un vaso ya recibió todas sus monedas, ese vaso (con su carga)
+   se traslada sobre el TRAMO 2 (la banda ancha) hasta el punto de
+   recogida, al final de la banda.
+4. Un único DRON recorre las 3 denominaciones una por una: espera en el
+   punto de recogida hasta que el vaso llega, lo "recoge" (desaparece,
+   como si lo hubiera cargado), esquiva los 3 obstáculos volando hasta
+   SU meta, y regresa por la siguiente denominación.
+5. El dashboard va mostrando conteo, peso y valor por denominación.
 
 Requisitos: pip install pybullet
 Ejecutar:   python simulate_monedas.py
@@ -23,7 +25,8 @@ import time
 import math
 
 FABRICA_URDF = "fabrica_monedas.urdf"
-ROBOT_URDF = "robot_recolector_movil.urdf"
+ROBOT_URDF = "dron_recolector.urdf"
+ALTURA_VUELO = 0.35   # altura a la que vuela el dron
 
 # --------------------------------------------------------------------
 # 1. BANDA RECTA (transporte inicial)
@@ -44,11 +47,26 @@ TIPOS = [
     {"nombre": "$100", "valor": 100, "peso": 3.5, "color": [0.72, 0.45, 0.20, 1]},  # cobre
 ]
 
+# Posición de cada vaso (coincide con el separador y los vasos reales del
+# URDF: x=1.6, y=-0.4/0/0.4). Las monedas caen aquí, encima del vaso.
 Y_OFFSETS_CANAL = [-0.4, 0.0, 0.4]
-P_CLASIFICACION = [
-    (P_SALIDA[0] + 0.6, Y_OFFSETS_CANAL[i], 0.62) for i in range(3)
+P_VASO = [
+    (1.6, Y_OFFSETS_CANAL[i], 0.72) for i in range(3)
 ]
-DURACION_CLASIFICACION = 1.3   # s que tarda la moneda en desviarse a su canal
+# Compatibilidad con el resto del script (punto de clasificación = vaso)
+P_CLASIFICACION = P_VASO
+DURACION_CLASIFICACION = 1.3   # s que tarda la moneda en atravesar el separador hasta su vaso
+
+# --------------------------------------------------------------------
+# 2b. TRAMO 2: una vez el vaso tiene todas sus monedas, viaja sobre la
+#     banda ancha (cinta_seg2, x entre 1.4 y 2.8) hasta el punto de
+#     recogida, cerca del final de la banda.
+# --------------------------------------------------------------------
+MONEDAS_POR_VASO = 2   # N_MONEDAS / 3 denominaciones
+P_RECOGIDA = [
+    (2.7, Y_OFFSETS_CANAL[i], 0.68) for i in range(3)
+]
+DURACION_TRANSPORTE_VASO = 2.5   # s que tarda el vaso cargado en recorrer el tramo 2
 
 # --------------------------------------------------------------------
 # 3. CORREDOR COMPARTIDO CON 3 OBSTÁCULOS + 3 METAS (una por denominación)
@@ -61,7 +79,6 @@ METAS = [
 
 RADIO_SEGURIDAD = 0.32
 VELOCIDAD_ROBOT = 1.3
-RADIO_RUEDA = 0.05
 UMBRAL_LLEGADA = 0.15
 
 
@@ -69,9 +86,10 @@ def punto_en_linea(a, b, t):
     return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)
 
 
-# Los 3 obstáculos quedan fijos en el corredor central; el único carrito
-# los cruza varias veces (una vez por cada denominación que transporta).
-P_INICIO_CORREDOR = P_CLASIFICACION[1]
+# Los 3 obstáculos quedan fijos en el corredor central, entre el punto de
+# recogida (final del tramo 2) y las metas; el único dron los cruza
+# varias veces (una vez por cada denominación que transporta).
+P_INICIO_CORREDOR = P_RECOGIDA[1]
 OBSTACULOS = [
     {"pos": punto_en_linea(P_INICIO_CORREDOR, METAS[1], 0.28), "radio": 0.15},
     {"pos": punto_en_linea(P_INICIO_CORREDOR, METAS[1], 0.55), "radio": 0.15},
@@ -79,12 +97,13 @@ OBSTACULOS = [
 ]
 
 # --------------------------------------------------------------------
-# 4. RECORRIDO DEL ÚNICO CARRITO: recoger canal 0 -> meta 0 -> canal 1 ->
-#    meta 1 -> canal 2 -> meta 2 (uno a la vez, por denominación)
+# 4. RECORRIDO DEL ÚNICO DRON: recoger vaso 0 -> meta 0 -> recoger
+#    vaso 1 -> meta 1 -> recoger vaso 2 -> meta 2 (uno a la vez), siempre
+#    en el punto de recogida al final del tramo 2.
 # --------------------------------------------------------------------
 RECORRIDO = []
 for idx in range(3):
-    RECORRIDO.append({"accion": "recoger", "tipo": idx, "pos": P_CLASIFICACION[idx]})
+    RECORRIDO.append({"accion": "recoger", "tipo": idx, "pos": P_RECOGIDA[idx]})
     RECORRIDO.append({"accion": "entregar", "tipo": idx, "pos": METAS[idx]})
 
 # --------------------------------------------------------------------
@@ -98,18 +117,10 @@ p.setTimeStep(1.0 / 240.0)
 p.loadURDF("plane.urdf")
 p.loadURDF(FABRICA_URDF, basePosition=[0, 0, 0], useFixedBase=True)
 
-# --- Un solo carrito, arranca esperando bajo el primer canal ---
-inicio_robot = (P_CLASIFICACION[0][0], P_CLASIFICACION[0][1], 0.06)
+# --- Un solo dron, arranca esperando en el punto de recogida del tramo 2 ---
+inicio_robot = (P_RECOGIDA[0][0], P_RECOGIDA[0][1], ALTURA_VUELO)
 robot_id = p.loadURDF(ROBOT_URDF, basePosition=list(inicio_robot), useFixedBase=False)
 p.resetBasePositionAndOrientation(robot_id, list(inicio_robot), [0, 0, 0, 1])
-
-joint_izq = joint_der = None
-for j in range(p.getNumJoints(robot_id)):
-    nombre = p.getJointInfo(robot_id, j)[1].decode("utf-8")
-    if nombre == "joint_rueda_izq":
-        joint_izq = j
-    elif nombre == "joint_rueda_der":
-        joint_der = j
 
 robot_x, robot_y = inicio_robot[0], inicio_robot[1]
 
@@ -126,10 +137,10 @@ for i, tipo in enumerate(TIPOS):
                                     rgbaColor=tipo["color"][:3] + [0.6])
     p.createMultiBody(baseMass=0, baseVisualShapeIndex=meta_vis, basePosition=list(METAS[i]))
 
-# --- Canales de clasificación (marcadores de color al final de la banda) ---
+# --- Punto de recogida al final del tramo 2 (marcador de color por denominación) ---
 for i, tipo in enumerate(TIPOS):
-    canal_vis = p.createVisualShape(p.GEOM_CYLINDER, radius=0.12, length=0.02, rgbaColor=tipo["color"])
-    p.createMultiBody(baseMass=0, baseVisualShapeIndex=canal_vis, basePosition=list(P_CLASIFICACION[i]))
+    recogida_vis = p.createVisualShape(p.GEOM_CYLINDER, radius=0.14, length=0.02, rgbaColor=tipo["color"][:3] + [0.5])
+    p.createMultiBody(baseMass=0, baseVisualShapeIndex=recogida_vis, basePosition=list(P_RECOGIDA[i]))
 
 print(f"[DEBUG] Salida banda={P_SALIDA[:2]}  Metas={[m[:2] for m in METAS]}")
 for i, obs in enumerate(OBSTACULOS):
@@ -152,6 +163,24 @@ for i in range(N_MONEDAS):
 
 t_arranque = time.time()
 contador = [{"n": 0, "peso": 0.0, "valor": 0} for _ in range(3)]
+
+# --------------------------------------------------------------------
+# VASOS: uno por denominación, VISIBLE desde el arranque, quieto en su
+# puesto de clasificación (recibiendo las monedas que le van cayendo).
+# En cuanto recibe todas sus monedas, ese mismo vaso se despega y se
+# desliza sobre el tramo 2 hasta el punto de recogida, donde el dron
+# lo espera.
+# --------------------------------------------------------------------
+vasos = []
+for i, tipo in enumerate(TIPOS):
+    vaso_vis = p.createVisualShape(p.GEOM_CYLINDER, radius=0.09, length=0.05, rgbaColor=tipo["color"])
+    vid = p.createMultiBody(baseMass=0, baseVisualShapeIndex=vaso_vis, basePosition=list(P_VASO[i]))
+    vasos.append({
+        "id": vid, "salio": False, "en_transito": False,
+        "inicio_transito": None, "lista": False, "en_dron": False,
+    })
+
+OFFSET_CARGA = (0.0, 0.0, -0.14)   # dónde cuelga el vaso debajo del dron
 
 # --------------------------------------------------------------------
 # NAVEGACIÓN (campo potencial: atrae al destino, repele de obstáculos)
@@ -225,26 +254,62 @@ while p.isConnected():
     if todas_clasificadas:
         fase_robot = True
 
-    # --- El único carrito recorre canal->meta->canal->meta... en orden ---
+    # --- Vasos: al completarse una denominación, el vaso sale cargado por
+    #     el tramo 2 hacia el punto de recogida ---
+    for i, vaso in enumerate(vasos):
+        c = contador[i]
+        if not vaso["salio"] and c["n"] >= MONEDAS_POR_VASO:
+            vaso["salio"] = True
+            vaso["en_transito"] = True
+            vaso["inicio_transito"] = ahora
+            p.resetBasePositionAndOrientation(vaso["id"], list(P_VASO[i]), [0, 0, 0, 1])
+            print(f"[DASHBOARD] Vaso {TIPOS[i]['nombre']} completo, sale por el tramo 2 "
+                  f"hacia el punto de recogida...")
+
+        if vaso["en_transito"]:
+            t = (ahora - vaso["inicio_transito"]) / DURACION_TRANSPORTE_VASO
+            if t >= 1.0:
+                p.resetBasePositionAndOrientation(vaso["id"], list(P_RECOGIDA[i]), [0, 0, 0, 1])
+                vaso["en_transito"] = False
+                vaso["lista"] = True
+                print(f"[DASHBOARD] Vaso {TIPOS[i]['nombre']} llegó al punto de recogida.")
+            else:
+                pos = punto_en_linea(P_VASO[i], P_RECOGIDA[i], t) + (P_VASO[i][2],)
+                p.resetBasePositionAndOrientation(vaso["id"], list(pos), [0, 0, 0, 1])
+
+    # --- El único dron recorre vaso->meta->vaso->meta... en orden ---
     if fase_robot and not mision_completa:
         paso = RECORRIDO[paso_actual]
-        dx, dy, dist = calcular_direccion((robot_x, robot_y, 0.06), paso["pos"])
+        dx, dy, dist = calcular_direccion((robot_x, robot_y, ALTURA_VUELO), paso["pos"])
 
-        if dist < UMBRAL_LLEGADA:
+        # Antes de "recoger", el dron espera a que el vaso de esa
+        # denominación haya llegado al punto de recogida.
+        esperando_vaso = paso["accion"] == "recoger" and not vasos[paso["tipo"]]["lista"]
+
+        # Cámara: mientras el dron sólo está ESPERANDO un vaso (o toda la
+        # banda sigue clasificando), usamos la vista amplia para que se
+        # vea el vaso llegando al punto de recogida; solo cuando el dron
+        # ya va volando de verdad usamos la cámara que lo sigue de cerca.
+        if esperando_vaso:
+            p.resetDebugVisualizerCamera(5.6, 50, -38, [1.4, 0.0, 0])
+        else:
+            p.resetDebugVisualizerCamera(4.5, 0, -89.9, [robot_x, robot_y, 0])
+
+        if dist < UMBRAL_LLEGADA and not esperando_vaso:
             tipo = TIPOS[paso["tipo"]]
             if paso["accion"] == "recoger":
-                # "Carga" las monedas de ese canal: las hace desaparecer,
-                # como si el carrito ya las hubiera recogido.
-                for m in monedas:
-                    if m["tipo"] == paso["tipo"] and not m["recogida"]:
-                        p.resetBasePositionAndOrientation(m["id"], [0, 0, -5], [0, 0, 0, 1])
-                        m["recogida"] = True
+                # El dron engancha el vaso ya lleno: a partir de ahora el
+                # vaso viaja pegado al dron (se ve lo que el dron se lleva).
+                vasos[paso["tipo"]]["en_dron"] = True
                 c = contador[paso["tipo"]]
-                print(f"[DASHBOARD] Carrito recoge canal {tipo['nombre']}: "
+                print(f"[DASHBOARD] Dron recoge el vaso {tipo['nombre']}: "
                       f"{c['n']} monedas, {c['peso']:.1f} g, ${c['valor']}")
             else:
+                # Entrega: el vaso se suelta y queda depositado en la meta.
+                vasos[paso["tipo"]]["en_dron"] = False
+                p.resetBasePositionAndOrientation(vasos[paso["tipo"]]["id"], list(paso["pos"]), [0, 0, 0, 1])
                 c = contador[paso["tipo"]]
-                print(f"[DASHBOARD] Carrito entrega en meta {tipo['nombre']}: "
+                print(f"[DASHBOARD] Dron entrega en meta {tipo['nombre']}: "
                       f"{c['n']} monedas, {c['peso']:.1f} g, ${c['valor']}")
 
             paso_actual += 1
@@ -252,24 +317,21 @@ while p.isConnected():
                 mision_completa = True
                 print("[DASHBOARD] Recorrido completo: las 3 denominaciones fueron "
                       "recogidas y entregadas en su meta.")
-        else:
+        elif not esperando_vaso:
             robot_x += dx * VELOCIDAD_ROBOT * DT
             robot_y += dy * VELOCIDAD_ROBOT * DT
             yaw = math.atan2(dy, dx)
-            p.resetBasePositionAndOrientation(robot_id, [robot_x, robot_y, 0.06],
+            p.resetBasePositionAndOrientation(robot_id, [robot_x, robot_y, ALTURA_VUELO],
                                                p.getQuaternionFromEuler([0, 0, yaw]))
-            vel_ang = VELOCIDAD_ROBOT / RADIO_RUEDA
-            if joint_izq is not None:
-                p.setJointMotorControl2(robot_id, joint_izq, p.VELOCITY_CONTROL,
-                                         targetVelocity=vel_ang, force=0.02)
-            if joint_der is not None:
-                p.setJointMotorControl2(robot_id, joint_der, p.VELOCITY_CONTROL,
-                                         targetVelocity=vel_ang, force=0.02)
-
-        p.resetDebugVisualizerCamera(4.5, 0, -89.9, [robot_x, robot_y, 0])
     else:
-        p.resetDebugVisualizerCamera(3.6, 50, -45, [0.6, 0.0, 0])
+        # Vista amplia que cubre banda + separador + vasos + tramo 2
+        p.resetDebugVisualizerCamera(5.2, 50, -40, [1.2, 0.0, 0])
+
+    # --- El vaso enganchado (si hay uno) sigue al dron colgando debajo ---
+    for vaso in vasos:
+        if vaso["en_dron"]:
+            pos_carga = (robot_x + OFFSET_CARGA[0], robot_y + OFFSET_CARGA[1], ALTURA_VUELO + OFFSET_CARGA[2])
+            p.resetBasePositionAndOrientation(vaso["id"], list(pos_carga), [0, 0, 0, 1])
 
     p.stepSimulation()
     time.sleep(DT) 
-    
