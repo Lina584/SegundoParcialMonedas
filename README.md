@@ -109,6 +109,15 @@ streamlit run dashboard_streamlit.py
 ```
  
 > Se usa un broker MQTT público (sin autenticación) únicamente para efectos de esta demostración. En la versión final del proyecto, este enlace se reemplazaría por un broker propio o con autenticación, y `simulador_esp32.py` se sustituiría por el firmware real de la ESP32 publicando al mismo tema.
- 
 
+# Video dashboard web 
+
+[![Ver el video del dashboard](https://img.youtube.com/vi/Kce6V6-4xqI/maxresdefault.jpg)](https://youtu.be/Kce6V6-4xqI)
  
+# Autores 
+
+Lina María Moreno Ospina y Bryan Andrey Martinez Montaño
+
+Ingeniería Mecatrónica 
+
+Universidad Militar Nueva Granada
