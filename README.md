@@ -133,6 +133,8 @@ streamlit run dashboard_streamlit.py
 ## Video dashboard web
 
 [![Ver el video del dashboard](https://img.youtube.com/vi/Kce6V6-4xqI/maxresdefault.jpg)](https://youtu.be/Kce6V6-4xqI)
+## Documento 
+Se adjunto un documento en donde se especifica los planos y estructuras eléctricas y todo lo necesario para el sistema de monedas  
 
 # Autores
 
